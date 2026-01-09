@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>客户经理助手 · 星火插件版</title>
+<style>
+/* ===== 基础样式 ===== */
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans",sans-serif;
+     background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#333}
+.container{max-width:100%;padding:15px}
+.header{text-align:center;color:#fff;margin-bottom:20px}
+.header h1{font-size:24px}
+.header p{font-size:14px;opacity:.9}
+.tab-container{display:flex;background:#fff;border-radius:12px;padding:4px;margin-bottom:20px;box-shadow:0 2px 10px rgba(0,0,0,.1)}
+.tab{flex:1;padding:12px;text-align:center;border-radius:8px;cursor:pointer;font-size:14px;font-weight:500;transition:all .3s}
+.tab.active{background:#667eea;color:#fff}
+.content-area{background:#fff;border-radius:12px;padding:20px;box-shadow:0 4px 20px rgba(0,0,0,.1);margin-bottom:20px}
+.hidden{display:none}
+.input-group{margin-bottom:20px}
+.input-group label{display:block;margin-bottom:8px;font-weight:500;font-size:14px}
+.input-group select,.input-group textarea{width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px}
+.input-group textarea{resize:vertical;min-height:100px}
+.quick-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+.quick-btn{padding:12px;background:#fff;border:2px solid #e0e0e0;border-radius:8px;text-align:center;font-size:13px;cursor:pointer}
+.quick-btn:hover{border-color:#667eea;color:#667eea}
+.generate-btn{width:100%;padding:15px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;border:none;border-radius:8px;font-size:16px;font-weight:600}
+.generate-btn:active{transform:scale(.98)}
+.result-area{margin-top:20px;padding:15px;background:#f8f9fa;border-left:4px solid #667eea;border-radius:8px;display:none}
+.result-area.show{display:block}
+.result-title{font-weight:600;color:#667eea;margin-bottom:10px}
+.result-content{font-size:14px;line-height:1.6;white-space:pre-wrap}
+.copy-btn{background:#28a745;color:#fff;border:none;padding:8px 12px;border-radius:4px;font-size:12px;margin-top:10px}
+.history-item{padding:12px;background:#f8f9fa;border-radius:8px;margin-bottom:8px;font-size:13px;cursor:pointer}
+.history-item:hover{background:#e9ecef}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>客户经理助手</h1>
+    <p>星火插件 · 专业回复 · 经营指导</p>
+  </div>
+
+  <div class="tab-container">
+    <div class="tab active" onclick="switchTab('response')">问题回复</div>
+    <div class="tab" onclick="switchTab('guidance')">经营指导</div>
+    <div class="tab" onclick="switchTab('history')">历史记录</div>
+  </div>
+
+  <!-- 1. 问题回复（调用插件） -->
+  <div id="response-tab" class="content-area">
+    <div class="quick-actions">
+      <div class="quick-btn" onclick='quickSelect("价格咨询")'>价格咨询</div>
+      <div class="quick-btn" onclick='quickSelect("产品信息")'>产品信息</div>
+      <div class="quick-btn" onclick='quickSelect("售后服务")'>售后服务</div>
+      <div class="quick-btn" onclick='quickSelect("投诉处理")'>投诉处理</div>
+    </div>
+
+    <div class="input-group">
+      <label>客户问题类型</label>
+      <select id="question-type">
+        <option value="">请选择问题类型</option>
+        <option value="价格咨询">价格咨询</option>
+        <option value="产品信息">产品信息咨询</option>
+        <option value="售后服务">售后服务</option>
+        <option value="投诉处理">投诉处理</option>
+        <option value="订单查询">订单查询</option>
+        <option value="合作咨询">合作咨询</option>
+        <option value="其他">其他</option>
+      </select>
+    </div>
+
+    <div class="input-group">
+      <label>具体问题描述</label>
+      <textarea id="question-detail" placeholder="请详细描述客户的问题..."></textarea>
+    </div>
+
+    <div class="input-group">
+      <label>客户情绪状态</label>
+      <select id="customer-emotion">
+        <option value="正常">正常</option>
+        <option value="焦虑">焦虑</option>
+        <option value="愤怒">愤怒</option>
+        <option value="满意">满意</option>
+        <option value="疑惑">疑惑</option>
+      </select>
+    </div>
+
+    <button class="generate-btn" onclick="generateResponse()">生成规范回复</button>
+
+    <div id="response-result" class="result-area">
+      <div class="result-title">星火智能体回复：</div>
+      <div class="result-content" id="response-content"></div>
+      <button class="copy-btn" onclick="copyContent('response-content')">复制内容</button>
+    </div>
+  </div>
+
+  <!-- 2. 经营指导（本地模板，可后续再接入） -->
+  <div id="guidance-tab" class="content-area hidden">
+    <div class="input-group">
+      <label>客户类型</label>
+      <select id="customer-type">
+        <option value="">请选择客户类型</option>
+        <option value="新客户">新客户</option>
+        <option value="老客户">老客户</option>
+        <option value="重点客户">重点客户</option>
+        <option value="问题客户">问题客户</option>
+        <option value="流失客户">流失客户</option>
+      </select>
+    </div>
+
+    <div class="input-group">
+      <label>经营状况</label>
+      <select id="business-status">
+        <option value="">请选择经营状况</option>
+        <option value="良好">良好</option>
+        <option value="一般">一般</option>
+        <option value="下滑">下滑</option>
+        <option value="增长">增长</option>
+        <option value="停滞">停滞</option>
+      </select>
+    </div>
+
+    <div class="input-group">
+      <label>主要问题或需求</label>
+      <textarea id="business-issue" placeholder="请描述客户当前面临的主要问题或需求..."></textarea>
+    </div>
+
+    <div class="input-group">
+      <label>指导目标</label>
+      <select id="guidance-goal">
+        <option value="提升销量">提升销量</option>
+        <option value="改善经营">改善经营</option>
+        <option value="客户维护">客户维护</option>
+        <option value="问题解决">问题解决</option>
+        <option value="合作深化">合作深化</option>
+      </select>
+    </div>
+
+    <button class="generate-btn" onclick="generateGuidance()">生成经营指导方案</button>
+
+    <div id="guidance-result" class="result-area">
+      <div class="result-title">经营指导建议：</div>
+      <div class="result-content" id="guidance-content"></div>
+      <button class="copy-btn" onclick="copyContent('guidance-content')">复制内容</button>
+    </div>
+  </div>
+
+  <!-- 3. 历史记录 -->
+  <div id="history-tab" class="content-area hidden">
+    <div id="history-list"></div>
+  </div>
+</div>
+
+<!-- ======== 讯飞星火侧边插件（官方封装） ======== -->
+<script
+  type="module"
+  id="pluginScriptDom"
+  src="http://agent.ah.yc:40009/agent/broadside-plugin/broadside-plugin.min.js"
+  options='{"c":"http://agent.ah.yc:40009/agent/broadside-plugin/broadside-plugin.min.css","f":"http://10.48.32.55:40009/agent/agents-share-h5/?s=f2fff87578d244e19246c77361c40182&8om3"}'>
+</script>
+
+<script>
+/* ============ 标签切换 ============ */
+function switchTab(tab) {
+  document.querySelectorAll('.content-area').forEach(p => p.classList.add('hidden'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(tab + '-tab').classList.remove('hidden');
+  event.target.classList.add('active');
+  if (tab === 'history') updateHistory();
+}
+
+/* ============ 快速选择 ============ */
+function quickSelect(v) { document.getElementById('question-type').value = v; }
+
+/* ============ 生成回复（调用插件） ============ */
+async function generateResponse() {
+  const type    = document.getElementById('question-type').value;
+  const detail  = document.getElementById('question-detail').value.trim();
+  const emotion = document.getElementById('customer-emotion').value;
+  if (!type || !detail) return alert('请填写完整信息');
+
+  const prompt = `
+你是一名资深客户经理，请针对以下客户问题给出礼貌、专业、简洁的回复（120~200 字）。
+问题类型：${type}
+客户情绪：${emotion}
+具体问题：${detail}
+`;
+
+  try {
+    // 插件暴露的全局方法：直接问星火
+    const reply = await window.broadsidePlugin.chat(prompt);
+    document.getElementById('response-content').textContent = reply;
+    document.getElementById('response-result').classList.add('show');
+    saveHistory(type, detail, reply);
+  } catch (e) {
+    console.error(e);
+    alert('插件调用失败，请检查网络或插件是否加载完成');
+  }
+}
+
+/* ============ 经营指导（本地模板） ============ */
+function generateGuidance() {
+  const customerType   = document.getElementById('customer-type').value;
+  const businessStatus = document.getElementById('business-status').value;
+  const issue          = document.getElementById('business-issue').value.trim();
+  const goal           = document.getElementById('guidance-goal').value;
+  if (!customerType || !businessStatus || !issue) return alert('请填写完整信息');
+
+  const tpl = {
+    '新客户-增长': `1. 建立周回访机制；2. 推荐高毛利新品；3. 提供物料支持；4. 给予新客优惠；5. 月度复盘。`,
+    '老客户-下滑': `1. 诊断下滑根因；2. 调整产品结构；3. 共同制定促销；4. 降低库存压力；5. 介绍成功案例。`
+  };
+  const key = `${customerType}-${businessStatus}`;
+  let content = tpl[key] || `1. 现状分析；2. 目标：${goal}；3. 制定行动计划；4. 月度跟踪；5. 持续优化。`;
+  content += `\n\n针对您提到的"${issue}"，将制定专项方案。`;
+
+  document.getElementById('guidance-content').textContent = content;
+  document.getElementById('guidance-result').classList.add('show');
+  saveHistory('经营指导', `${customerType}-${businessStatus}`, content);
+}
+
+/* ============ 复制 ============ */
+function copyContent(id) {
+  navigator.clipboard.writeText(document.getElementById(id).textContent)
+    .then(() => alert('已复制'));
+}
+
+/* ============ 历史存储 ============ */
+function saveHistory(type, issue, content) {
+  const list = JSON.parse(localStorage.getItem('mh') || '[]');
+  list.unshift({ type, issue, content, time: new Date().toLocaleString('zh-CN') });
+  if (list.length > 20) list.pop();
+  localStorage.setItem('mh', JSON.stringify(list));
+}
+
+function updateHistory() {
+  const list = JSON.parse(localStorage.getItem('mh') || '[]');
+  const box  = document.getElementById('history-list');
+  if (!list.length) return box.innerHTML = '<div style="text-align:center;color:#999">暂无记录</div>';
+  box.innerHTML = list.map((h, i) => `
+    <div class="history-item" onclick="loadHistory(${i})">
+      <div><strong>${h.type}</strong> - ${h.time}</div>
+      <div style="color:#666;font-size:12px;margin-top:4px">${h.issue}</div>
+    </div>`).join('');
+}
+
+function loadHistory(i) {
+  const h = JSON.parse(localStorage.getItem('mh') || '[]')[i];
+  if (h.type === '经营指导') {
+    switchTab('guidance');
+    document.getElementById('guidance-content').textContent = h.content;
+    document.getElementById('guidance-result').classList.add('show');
+  } else {
+    switchTab('response');
+    document.getElementById('response-content').textContent = h.content;
+    document.getElementById('response-result').classList.add('show');
+  }
+}
+
+/* ============ 插件加载完成后再启用按钮 ============ */
+window.addEventListener('broadsidePluginReady', () => {
+  console.log('星火侧边插件加载完成，可随时调用');
+});
+
+document.addEventListener('DOMContentLoaded', updateHistory);
+</script>
+</body>
+</html>
